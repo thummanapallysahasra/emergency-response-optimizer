@@ -18,8 +18,7 @@ def test_dispatch_existing_incident():
 
     assert "vehicle_id" in data
     assert "eta_minutes" in data
-    assert "fuel_cost" in data
-
+    assert "fuel_liters" in data
 
 def test_dispatch_missing_incident():
     response = client.post(

@@ -7,23 +7,30 @@ class Vehicle(BaseModel):
     id: str
     type: Literal["ambulance", "fire_truck", "police"]
     station_id: str
-    x: int
-    y: int
-    fuel: float = Field(ge=0, le=100)
+    x: float
+    y: float
+
+    fuel_liters: float = Field(ge=0)
+    speed_kmh: float = Field(gt=0)
+    fuel_efficiency_kpl: float = Field(gt=0)
+
+    zone: str
     available: bool = True
-    fuel_rate: float = Field(default=1.0, gt=0)
 
 
 class Station(BaseModel):
     id: str
     name: str
-    x: int
-    y: int
+    x: float
+    y: float
 
 
 class Incident(BaseModel):
     id: str
     type: str
-    severity: Literal["low", "medium", "high", "critical"]
-    x: int
-    y: int
+
+    base_priority: float = Field(gt=0)
+    reported_time_ago_min: float = Field(ge=0)
+
+    x: float
+    y: float
