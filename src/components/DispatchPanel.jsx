@@ -1,29 +1,38 @@
 import { useState } from "react";
-import { incidents, vehicles } from "../data/dummyData";
+import { incidents } from "../data/dummyData";
+import { dispatchIncident } from "../services/api";
 
 function DispatchPanel() {
-  const [dispatched, setDispatched] = useState(false);
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const activeIncident = incidents.find(
     (incident) => incident.status === "Active"
   );
 
-  const recommendedVehicle = vehicles.find(
-    (vehicle) =>
-      vehicle.status === "Available" &&
-      vehicle.type === "Ambulance"
-  );
-
-  if (!activeIncident || !recommendedVehicle) {
+  if (!activeIncident) {
     return (
       <section className="dispatch-panel">
         <h2>No dispatch available</h2>
-        <p>
-          There is currently no active incident or available ambulance.
-        </p>
+        <p>No active incident.</p>
       </section>
     );
   }
+
+  const handleDispatch = async () => {
+    setLoading(true);
+    setError("");
+
+    try {
+      const data = await dispatchIncident(activeIncident.id);
+      setResult(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <section className="dispatch-panel">
@@ -35,61 +44,55 @@ function DispatchPanel() {
             and response time.
           </p>
         </div>
-
         <span className="ai-badge">AI OPTIMIZED</span>
       </div>
 
       <div className="dispatch-content">
         <div className="dispatch-incident">
           <span>ACTIVE INCIDENT</span>
-
           <h3>{activeIncident.type}</h3>
-
           <p>📍 {activeIncident.location}</p>
-
-          <strong>
-            {activeIncident.priority} Priority
-          </strong>
+          <strong>{activeIncident.priority} Priority</strong>
         </div>
 
         <div className="dispatch-arrow">→</div>
 
         <div className="recommended-vehicle">
           <span>RECOMMENDED VEHICLE</span>
+          <h3>{result?.vehicle_id || "Awaiting AI..."}</h3>
 
-          <h3>{recommendedVehicle.id}</h3>
-
-          <p>🚑 {recommendedVehicle.type}</p>
-
-          <p>📍 {recommendedVehicle.location}</p>
-
-          <div className="recommendation-score">
-            <span>Demo Optimization Score</span>
-            <strong>94%</strong>
-          </div>
+          {result && (
+            <>
+              <p>⏱ ETA: {result.eta_minutes} min</p>
+              <p>📏 Distance: {result.distance_km} km</p>
+              <div className="recommendation-score">
+                <span>Heuristic Score</span>
+                <strong>{result.heuristic_score}</strong>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
-      <div className="dispatch-reason">
-        <strong>Why this vehicle?</strong>
+      {error && (
+        <div className="dispatch-reason">
+          <strong>Error</strong>
+          <p>{error}</p>
+        </div>
+      )}
 
-        <p>
-          {recommendedVehicle.id} is available and matches the
-          requirements of this emergency.
-        </p>
-      </div>
-
-      {!dispatched ? (
+      {!result ? (
         <button
           className="confirm-dispatch"
-          onClick={() => setDispatched(true)}
+          onClick={handleDispatch}
+          disabled={loading}
         >
-          Confirm Dispatch
+          {loading ? "Calculating..." : "Get AI Dispatch Recommendation"}
         </button>
       ) : (
         <div className="dispatch-success">
-          ✅ Dispatch Confirmed — {recommendedVehicle.id} assigned to{" "}
-          {activeIncident.id}
+          ✅ Dispatch Confirmed — {result.vehicle_id} assigned to{" "}
+          {result.incident_id}
         </div>
       )}
     </section>
